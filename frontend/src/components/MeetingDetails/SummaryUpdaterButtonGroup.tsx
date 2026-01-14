@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
-import { Copy, Save, Loader2, Search, FolderOpen } from 'lucide-react';
+import { Copy, Save, Loader2, FileText, FileDown } from 'lucide-react';
 import Analytics from '@/lib/analytics';
 
 interface SummaryUpdaterButtonGroupProps {
@@ -10,9 +10,13 @@ interface SummaryUpdaterButtonGroupProps {
   isDirty: boolean;
   onSave: () => Promise<void>;
   onCopy: () => Promise<void>;
+  onExport: () => Promise<void>;
+  isExporting?: boolean;
   onFind?: () => void;
   onOpenFolder: () => Promise<void>;
   hasSummary: boolean;
+  exportedFilePath?: string | null;
+  onOpenExportedFile?: () => void;
 }
 
 export function SummaryUpdaterButtonGroup({
@@ -20,13 +24,16 @@ export function SummaryUpdaterButtonGroup({
   isDirty,
   onSave,
   onCopy,
+  onExport,
+  isExporting = false,
   onFind,
   onOpenFolder,
-  hasSummary
+  hasSummary,
+  exportedFilePath,
+  onOpenExportedFile
 }: SummaryUpdaterButtonGroupProps) {
   return (
     <ButtonGroup>
-      {/* Save button */}
       <Button
         variant="outline"
         size="sm"
@@ -51,7 +58,6 @@ export function SummaryUpdaterButtonGroup({
         )}
       </Button>
 
-      {/* Copy button */}
       <Button
         variant="outline"
         size="sm"
@@ -67,23 +73,45 @@ export function SummaryUpdaterButtonGroup({
         <span className="hidden lg:inline">Copy</span>
       </Button>
 
-      {/* Find button */}
-      {/* {onFind && (
+      <Button
+        variant="outline"
+        size="sm"
+        title={isExporting ? "Exporting" : "Export to Markdown"}
+        onClick={() => {
+          Analytics.trackButtonClick('export_summary', 'meeting_details');
+          onExport();
+        }}
+        disabled={!hasSummary || isExporting}
+        className="cursor-pointer"
+      >
+        {isExporting ? (
+          <>
+            <Loader2 className="animate-spin" />
+            <span className="hidden lg:inline">Exporting...</span>
+          </>
+        ) : (
+          <>
+            <FileDown />
+            <span className="hidden lg:inline">Export</span>
+          </>
+        )}
+      </Button>
+
+      {exportedFilePath && onOpenExportedFile && (
         <Button
           variant="outline"
           size="sm"
-          title="Find in Summary"
+          title="View Exported Summary File"
           onClick={() => {
-            Analytics.trackButtonClick('find_in_summary', 'meeting_details');
-            onFind();
+            Analytics.trackButtonClick('view_exported_file', 'meeting_details');
+            onOpenExportedFile();
           }}
-          disabled={!hasSummary}
           className="cursor-pointer"
         >
-          <Search />
-          <span className="hidden lg:inline">Find</span>
+          <FileText />
+          <span className="hidden lg:inline">View File</span>
         </Button>
-      )} */}
+      )}
     </ButtonGroup>
   );
 }

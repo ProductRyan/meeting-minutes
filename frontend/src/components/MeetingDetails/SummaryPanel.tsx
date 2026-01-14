@@ -8,7 +8,10 @@ import { ModelConfig } from '@/components/ModelSettingsModal';
 import { SummaryGeneratorButtonGroup } from './SummaryGeneratorButtonGroup';
 import { SummaryUpdaterButtonGroup } from './SummaryUpdaterButtonGroup';
 import Analytics from '@/lib/analytics';
-import { RefObject } from 'react';
+import { RefObject, useState } from 'react';
+import { FileText } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { toast } from 'sonner';
 
 interface SummaryPanelProps {
   meeting: {
@@ -86,6 +89,36 @@ export function SummaryPanel({
   onOpenModelSettings
 }: SummaryPanelProps) {
   const isSummaryLoading = summaryStatus === 'processing' || summaryStatus === 'summarizing' || summaryStatus === 'regenerating';
+  const [exportedFilePath, setExportedFilePath] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportComplete = (filePath: string) => {
+    setExportedFilePath(filePath);
+  };
+
+  const handleExportSummary = async () => {
+    if (!summaryRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      await summaryRef.current.exportToMarkdown();
+    } catch (error) {
+      console.error('Failed to export summary:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleOpenExportedFile = async () => {
+    if (!exportedFilePath) return;
+    
+    try {
+      await invoke('open_external_url', { url: exportedFilePath });
+    } catch (error) {
+      console.error('Failed to open exported file:', error);
+      toast.error("Failed to open exported file");
+    }
+  };
 
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-white overflow-hidden">
@@ -128,12 +161,16 @@ export function SummaryPanel({
                 isDirty={isTitleDirty || (summaryRef.current?.isDirty || false)}
                 onSave={onSaveAll}
                 onCopy={onCopySummary}
+                onExport={handleExportSummary}
+                isExporting={isExporting}
                 onFind={() => {
                   // TODO: Implement find in summary functionality
                   console.log('Find in summary clicked');
                 }}
                 onOpenFolder={onOpenFolder}
                 hasSummary={!!aiSummary}
+                exportedFilePath={exportedFilePath}
+                onOpenExportedFile={handleOpenExportedFile}
               />
             </div>
           </div>
@@ -260,6 +297,8 @@ export function SummaryPanel({
                 title: meetingTitle,
                 created_at: meeting.created_at
               }}
+              modelConfig={modelConfig}
+              onExportComplete={handleExportComplete}
             />
           </div>
           {summaryStatus !== 'idle' && (

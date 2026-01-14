@@ -633,6 +633,10 @@ pub fn run() {
             api::api_save_custom_openai_config,
             api::api_get_custom_openai_config,
             api::api_test_custom_openai_connection,
+            // Summary export commands
+            api::api_get_summary_export_directory,
+            api::api_set_summary_export_directory,
+            api::api_export_summary_markdown,
             // Summary commands
             summary::api_process_transcript,
             summary::api_get_summary,

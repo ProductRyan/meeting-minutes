@@ -96,6 +96,10 @@ pub struct Setting {
     #[sqlx(rename = "customOpenAIConfig")]
     #[serde(rename = "customOpenAIConfig")]
     pub custom_openai_config: Option<String>,
+    /// Directory path where meeting summary markdown files should be exported
+    #[sqlx(rename = "summary_export_directory")]
+    #[serde(rename = "summaryExportDirectory")]
+    pub summary_export_directory: Option<String>,
 }
 
 impl Setting {

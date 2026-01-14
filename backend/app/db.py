@@ -142,6 +142,13 @@ class DatabaseManager:
                 )
             """)
 
+            # Migration: Add summary_export_directory column to settings table
+            try:
+                cursor.execute("ALTER TABLE settings ADD COLUMN summary_export_directory TEXT")
+                logger.info("Added summary_export_directory column to settings table")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
             # Create transcript_settings table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS transcript_settings (

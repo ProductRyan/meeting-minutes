@@ -1,5 +1,6 @@
 pub mod api;
 pub mod commands;
+pub mod export_summary;
 
 pub use api::*;
-// Don't re-export commands to avoid conflicts - lib.rs will import directly
+pub use export_summary::*;

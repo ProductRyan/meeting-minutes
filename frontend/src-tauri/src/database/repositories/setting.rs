@@ -345,4 +345,36 @@ impl SettingsRepository {
 
         Ok(())
     }
+
+    /// Gets the summary export directory setting
+    pub async fn get_summary_export_directory(
+        pool: &SqlitePool,
+    ) -> std::result::Result<Option<String>, sqlx::Error> {
+        let directory: Option<String> = sqlx::query_scalar(
+            "SELECT summary_export_directory FROM settings WHERE id = '1' LIMIT 1"
+        )
+        .fetch_optional(pool)
+        .await?;
+        Ok(directory)
+    }
+
+    /// Sets the summary export directory setting
+    pub async fn set_summary_export_directory(
+        pool: &SqlitePool,
+        directory: &str,
+    ) -> std::result::Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            INSERT INTO settings (id, provider, model, whisperModel, summary_export_directory)
+            VALUES ('1', 'ollama', '', 'large-v3', $1)
+            ON CONFLICT(id) DO UPDATE SET
+                summary_export_directory = excluded.summary_export_directory
+            "#,
+        )
+        .bind(directory)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

@@ -7,6 +7,8 @@ import { AISummary } from './index';
 import { Block } from '@blocknote/core';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
+import { invoke } from '@tauri-apps/api/core';
+import { toast } from 'sonner';
 import "@blocknote/shadcn/style.css";
 
 // Dynamically import BlockNote Editor to avoid SSR issues
@@ -25,10 +27,17 @@ interface BlockNoteSummaryViewProps {
     created_at: string;
   };
   onDirtyChange?: (isDirty: boolean) => void;
+  modelConfig?: {
+    provider: string;
+    model: string;
+  };
+  exportedFilePath?: string | null;
+  onExportComplete?: (filePath: string) => void;
 }
 
 export interface BlockNoteSummaryViewRef {
   saveSummary: () => Promise<void>;
+  exportToMarkdown: () => Promise<void>;
   getMarkdown: () => Promise<string>;
   isDirty: boolean;
 }
@@ -72,7 +81,9 @@ export const BlockNoteSummaryView = forwardRef<BlockNoteSummaryViewRef, BlockNot
   error = null,
   onRegenerateSummary,
   meeting,
-  onDirtyChange
+  onDirtyChange,
+  modelConfig,
+  onExportComplete
 }, ref) => {
   const { format, data } = detectSummaryFormat(summaryData);
   const [isDirty, setIsDirty] = useState(false);
@@ -157,9 +168,61 @@ export const BlockNoteSummaryView = forwardRef<BlockNoteSummaryViewRef, BlockNot
     }
   }, [onSave, isDirty, currentBlocks, editor]);
 
+  const handleExport = useCallback(async () => {
+    if (!meeting || !modelConfig) {
+      toast.error("Export not available", {
+        description: "Meeting or model configuration is missing"
+      });
+      return;
+    }
+
+    try {
+      console.log('📤 Exporting summary to markdown file...');
+
+      // Get markdown content from current state or editor
+      const blocksToExport = currentBlocks.length > 0 ? currentBlocks : editor.document;
+      const markdown = await editor.blocksToMarkdownLossy(blocksToExport);
+
+      const filePath = await invoke<string>('api_export_summary_markdown', {
+        meetingId: meeting.id,
+        meetingTitle: meeting.title,
+        markdownContent: markdown,
+        provider: modelConfig.provider,
+        model: modelConfig.model,
+        createdAt: meeting.created_at
+      });
+      
+      console.log('✅ Exported summary to:', filePath);
+      toast.success("Summary exported", {
+        description: `Saved to ${filePath.split('/').pop()}`
+      });
+      
+      if (onExportComplete) {
+        onExportComplete(filePath);
+      }
+    } catch (exportError) {
+      console.warn('Export failed:', exportError);
+      const errorMessage = String(exportError);
+      if (errorMessage.includes('No export directory configured')) {
+        toast.error("No export directory configured", {
+          description: "Please set an export directory in Preferences"
+        });
+      } else if (errorMessage.includes('does not exist')) {
+        toast.error("Export directory not found", {
+          description: "Please update the export directory in Preferences"
+        });
+      } else {
+        toast.error("Failed to export summary", {
+          description: errorMessage
+        });
+      }
+    }
+  }, [meeting, modelConfig, currentBlocks, editor, onExportComplete]);
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     saveSummary: handleSave,
+    exportToMarkdown: handleExport,
     getMarkdown: async () => {
       try {
         console.log('🔍 getMarkdown called, format:', format);

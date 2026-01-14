@@ -7,6 +7,7 @@ import { invoke } from "@tauri-apps/api/core"
 import Analytics from "@/lib/analytics"
 import AnalyticsConsentSwitch from "./AnalyticsConsentSwitch"
 import { useConfig, NotificationSettings } from "@/contexts/ConfigContext"
+import { SummaryExportDirectory } from "./SummaryExportDirectory"
 
 export function PreferenceSettings() {
   const {
@@ -216,6 +217,22 @@ export function PreferenceSettings() {
         <div className="mt-4 p-3 bg-blue-50 rounded-md">
           <p className="text-xs text-blue-800">
             <strong>Note:</strong> Database and models are stored together in your application data directory for unified management.
+          </p>
+        </div>
+      </div>
+
+      {/* Summary Export Directory Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary Export Settings</h3>
+        <p className="text-sm text-gray-600 mb-6">
+          Choose where to automatically save markdown files of meeting summaries
+        </p>
+
+        <SummaryExportDirectory />
+
+        <div className="mt-4 p-3 bg-blue-50 rounded-md">
+          <p className="text-xs text-blue-800">
+            <strong>Note:</strong> When you save a summary, a markdown file will be automatically created in this directory with the meeting name and date.
           </p>
         </div>
       </div>
