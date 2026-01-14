@@ -125,20 +125,21 @@ pub async fn api_export_summary_markdown<R: Runtime>(
         })
         .collect::<String>();
 
-    // Parse the created_at timestamp and format it
+    // Parse the created_at timestamp and convert to local time
     let timestamp = chrono::DateTime::parse_from_rfc3339(&created_at)
+        .map(|dt| dt.with_timezone(&chrono::Local))
         .or_else(|_| {
-            // Try parsing as naive datetime and assume UTC
+            // Try parsing as naive datetime and assume UTC, then convert to local
             chrono::NaiveDateTime::parse_from_str(&created_at, "%Y-%m-%dT%H:%M:%S%.f")
                 .map(|naive| {
                     chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
                         naive,
                         chrono::Utc,
                     )
-                    .into()
+                    .with_timezone(&chrono::Local)
                 })
         })
-        .unwrap_or_else(|_| chrono::Local::now().into());
+        .unwrap_or_else(|_| chrono::Local::now());
 
     let date_str = timestamp.format("%Y-%m-%d").to_string();
     let time_str = timestamp.format("%H:%M").to_string();
